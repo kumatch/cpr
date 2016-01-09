@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 const (
@@ -83,25 +84,42 @@ func copyOnDir(source, dest *element, options []int) error {
 		return err
 	}
 
+	wg := new(sync.WaitGroup)
+
 	for _, c := range *copyToSlice {
+		if err != nil {
+			break
+		}
+
 		fmt.Printf("%s => %s\n", c.source, c.dest)
 		childSource := createElement(c.source, "")
 		childDest := createElement(c.dest, "")
 
+		wg.Add(1)
+
 		if c.isDir {
-			err := copyOnDir(childSource, childDest, options)
-			if err != nil {
-				return err
-			}
+			func() {
+				defer wg.Done()
+				dirErr := copyOnDir(childSource, childDest, options)
+				if dirErr != nil {
+					err = dirErr
+				}
+			}()
 		} else {
-			err := copyOnFile(childSource, childDest, options)
-			if err != nil {
-				return err
-			}
+			go func() {
+				defer wg.Done()
+
+				fileErr := copyOnFile(childSource, childDest, options)
+				if fileErr != nil {
+					err = fileErr
+				}
+			}()
 		}
 	}
 
-	return nil
+	wg.Wait()
+
+	return err
 }
 
 type copyTo struct {
