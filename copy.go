@@ -57,15 +57,15 @@ func copyOnFile(source, dest *element, options []int) error {
 	isOverwrite := parseOptions(options)
 
 	if dest.IsDir() {
-		return copyFilename(source.Path(), source.CreateCopyToPath(dest))
+		return copyFilename(source, source.CreateCopyElement(dest))
 	}
 
 	if !dest.IsExists() {
-		return copyFilename(source.Path(), dest.Path())
+		return copyFilename(source, dest)
 	}
 
 	if isOverwrite {
-		return copyFilename(source.Path(), dest.Path())
+		return copyFilename(source, dest)
 	}
 
 	return nil

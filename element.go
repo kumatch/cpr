@@ -31,6 +31,12 @@ func (e *element) IsDir() bool {
 	return stat != nil && (*stat).IsDir()
 }
 
+func (e *element) IsSymLink() bool {
+	stat, _ := e.stat()
+
+	return stat != nil && ((*stat).Mode()&os.ModeSymlink) == os.ModeSymlink
+}
+
 func (e *element) Dirname() string {
 	return filepath.Dir(e.Path())
 }
@@ -39,12 +45,16 @@ func (e *element) Basename() string {
 	return filepath.Base(e.Path())
 }
 
-func (e *element) CreateCopyToPath(copyToElement *element) string {
+func (e *element) CreateCopyElement(copyToElement *element) *element {
+	var filename string
+
 	if copyToElement.IsDir() {
-		return filepath.Join(copyToElement.Path(), e.Basename())
+		filename = filepath.Join(copyToElement.Path(), e.Basename())
+	} else {
+		filename = filepath.Join(copyToElement.Dirname(), e.Basename())
 	}
 
-	return filepath.Join(copyToElement.Dirname(), e.Basename())
+	return createElement(filename, copyToElement.basePath)
 }
 
 func (e *element) stat() (*os.FileInfo, error) {
